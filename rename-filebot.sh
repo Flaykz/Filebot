@@ -7,7 +7,7 @@ DIR_MEDIA="/media/odroid"
 IP_KODI="localhost"
 LOG_FILE="amc.log"
 ACTION="MOVE"
-CONFLICT="auto" #skip override
+CONFLICT="skip" #skip override auto
 ENCODING="utf8"
 SERIE_FORMAT="Multimedia 2/Series/{primaryTitle}/Saison {s}/{primaryTitle} - {s00e00.replaceAll(\"S\",\"\").replaceAll(\"E\",\"X\")} - {t}{if (ext == 'srt') '.'}{if (ext == 'srt') lang}"
 MOVIE_FORMAT="Multimedia/Films/{primaryTitle} ({y})/{primaryTitle} ({y}) {vf}{if (ext == 'srt') '.'}{if (ext == 'srt') lang}"
@@ -56,7 +56,7 @@ if tail -n 38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |grep "already exists" > /de
 		then
 		#A voir pour tester  si il est possible de récupérer la bande audio
 		rm -f "$TR_TORRENT_DIR/$TR_TORRENT_NAME" 1>&2
-		echo $(date +"%d-%m-%y %T") Suppression de "$TR_TORRENT_DIR/$TR_TORRENT_NAME" >> "$FILELOG"
+		echo $(date +"%d-%m-%y %T") "Suppression de $TR_TORRENT_DIR/$TR_TORRENT_NAME : $TR_TORRENT_LENGTH (Ancien : $EXISTING_FILE_LENGTH)" >> "$FILELOG"
 		echo "Suppression de $TR_TORRENT_DIR/$TR_TORRENT_NAME" 1>&2 
 	else	
 		#A voir pour tester si c'est du HD ou pas, lequel faut remplacer etc
