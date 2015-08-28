@@ -5,6 +5,9 @@ SCRIPT_PATH="$0"
 TR_TORRENT="$1"
 DIR_MEDIA="/media/odroid"
 IP_KODI="localhost"
+USER_KODI="###"
+PASSWORD_KODI="###"
+RPC_PORT_KODI="8081"
 LOG_FILE="amc.log"
 ACTION="MOVE"
 CONFLICT="skip" #skip override auto
@@ -65,6 +68,9 @@ if tail -n 38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |grep "already exists" > /de
 	fi
 fi
 
+TR_ID = `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F "$TR_TORRENT_NAME" |cut -d "*" -f 1 |sed 's/ //g'`
+transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "$TR_ID" -r
+
 echo $(date +"%d-%m-%y %T") Statut : "$?" >> "$FILELOG"
 echo "********************************************************" >> "$FILELOG"
 #tail -n -50 "$FILELOG" |sed -n '/$SCRIPT_PATH/,/Statut/p'
@@ -73,6 +79,7 @@ if tail -n -38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |head -n -1 |grep "MOVE" |t
 	then
 	DIR_PATH=`tail -n -38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |head -n -1 |grep "MOVE" |tail -n 1 |awk -Fto '{print $2}'|cut -d '[' -f 2 |cut -d ']' -f 1`
 	DIR_PATH=`dirname "$DIR_PATH"`
-	sudo chown -R odroid:odroid "$DIR_PATH"
+	echo sudo chown -R "$USER_KODI":"$USER_KODI" "$DIR_PATH" >> "$FILELOG"
+	sudo chown -R "$USER_KODI":"$USER_KODI" "$DIR_PATH"
 	sudo chmod -R 777 "$DIR_PATH"
 fi
