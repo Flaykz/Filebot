@@ -1,24 +1,16 @@
 #!/bin/sh
+
 echo " "
-FILELOG=/var/log/filebot.log
 SCRIPT_PATH="$0"
+DIR_SCRIPT_PATH=`dirname "$SCRIPT_PATH"`
+
 TR_TORRENT="$1"
-DIR_MEDIA="/media/odroid"
-IP_KODI="####"
-USER_KODI="####"
-PASSWORD_KODI="####"
-RPC_PORT_KODI="####"
-LOG_FILE="amc.log"
-ACTION="MOVE"
-CONFLICT="skip" #skip override auto
-ENCODING="utf8"
-SERIE_FORMAT="Multimedia 2/Series/{primaryTitle}/Saison {s}/{primaryTitle} - {s00e00.replaceAll(\"S\",\"\").replaceAll(\"E\",\"X\")} - {t}{if (ext == 'srt') '.'}{if (ext == 'srt') lang}"
-MOVIE_FORMAT="Multimedia/Films/{primaryTitle} ({y})/{primaryTitle} ({y}) {vf}{if (ext == 'srt') '.'}{if (ext == 'srt') lang}"
-UT_KIND="single" #multi
 TR_TORRENT_DIR=`dirname "$TR_TORRENT"`
 TR_TORRENT_NAME=`basename "$TR_TORRENT"`
-TORRENT_SUBTITLES=""
-ARTWORK="n"
+
+# Récupération du fichier de config
+. "$DIR_SCRIPT_PATH/filebot.conf"
+
 
 if [ -z `echo "$TR_TORRENT_NAME" |grep -i "VOSTFR"` ] >/dev/null 2>&1
 then
@@ -65,7 +57,7 @@ if ! [ -z `tail -n 38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |grep "already exist
 then
 	#fichier deja existant
 	#tester si c'est du mkv ou du mp4 = facilement modifiable
-	TR_TORRENT_LENGTH=`stat -c "%s" "$TR_TORRENT_DIR/$TR_TORRENT_NAME"` 
+	TR_TORRENT_LENGTH=`stat -c "%s" "$TR_TORRENT_DIR/$TR_TORRENT_NAME"`
 	EXISTING_FILE=`tail -n 38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |grep "already exists" |awk -Fbecause '{print $2}' |cut -d '[' -f 2 |cut -d ']' -f 1`
 	EXISTING_FILE_LENGTH=`stat -c "%s" "$EXISTING_FILE"`
 	if [ "$TR_TORRENT_LENGTH" -eq "$EXISTING_FILE_LENGTH" ] >/dev/null 2>&1
@@ -73,7 +65,7 @@ then
 		#A voir pour tester  si il est possible de récupérer la bande audio
 		rm -f "$TR_TORRENT_DIR/$TR_TORRENT_NAME" 1>&2
 		echo $(date +"%d-%m-%y %T") "Suppression de $TR_TORRENT_DIR/$TR_TORRENT_NAME : $TR_TORRENT_LENGTH (Ancien : $EXISTING_FILE_LENGTH)" >> "$FILELOG"
-		echo "Suppression de $TR_TORRENT_DIR/$TR_TORRENT_NAME" 1>&2 
+		echo "Suppression de $TR_TORRENT_DIR/$TR_TORRENT_NAME" 1>&2
 	else
 		#A voir pour tester si c'est du HD ou pas, lequel faut remplacer etc
 		echo $(date +"%d-%m-%y %T") Une action doit être effectuée pour le fichier suivant :  "$TR_TORRENT_DIR/$TR_TORRENT_NAME" >> "$FILELOG"
@@ -82,10 +74,12 @@ then
 fi
 
 #On enleve le torrent de transmission
-TR_ID=`transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F "$TR_TORRENT_NAME" |awk '{print $1}'`
+TR_ID=`transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F "${TR_TORRENT_NAME%.*}" |awk '{print $1}'`
 if ! [ -z "$TR_ID" ] > /dev/null 2>&1
 then
-	echo $(date +"%d-%m-%y %T") `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "$TR_ID" -r` >> "$FILELOG"
+        echo $(date +"%d-%m-%y %T") "transmission-remote $IP_KODI:$RPC_PORT_KODI -n $USER_KODI:$PASSWORD_KODI -t $TR_ID -r : " `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "$TR_ID" -r` >> "$FILELOG"
+else
+        echo $(date +"%d-%m-%y %T") "NO TR_ID ! transmission-remote $IP_KODI:$RPC_PORT_KODI -n $USER_KODI:$PASSWORD_KODI -l |grep -F ${TR_TORRENT_NAME%.*} |awk '{print "'$1'"}' : $TR_ID" >> "$FILELOG"
 fi
 
 #On modifie les droits si un fichier est rajouté
@@ -104,5 +98,5 @@ then
 		echo $(date +"%d-%m-%y %T") "Modification des droits pour le dossier $DIR_PATH" >> "$FILELOG"
 	fi
 fi
-#echo $(date +"%d-%m-%y %T") Statut : "$?" >> "$FILELOG"
+#echo $(date +"%d-%m-%y %T") "Statut : $?" >> "$FILELOG"
 echo "********************************************************" >> "$FILELOG"
