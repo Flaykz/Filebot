@@ -58,7 +58,7 @@ then
 	#fichier deja existant
 	#tester si c'est du mkv ou du mp4 = facilement modifiable
 	TR_TORRENT_LENGTH=`stat -c "%s" "$TR_TORRENT_DIR/$TR_TORRENT_NAME"`
-	EXISTING_FILE=`tail -n 38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |grep "already exists" |awk -Fbecause '{print $2}' |cut -d '[' -f 2 |cut -d ']' -f 1`
+	EXISTING_FILE=`tail -n 38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |grep "already exists" |sed -E 's/(.*)\] because \[(.*)(\] already exists)/\2/'`
 	EXISTING_FILE_LENGTH=`stat -c "%s" "$EXISTING_FILE"`
 	if [ "$TR_TORRENT_LENGTH" -eq "$EXISTING_FILE_LENGTH" ] >/dev/null 2>&1
 	then
@@ -77,16 +77,16 @@ fi
 TR_ID=`transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F "${TR_TORRENT_NAME%.*}" |awk '{print $1}'`
 if ! [ -z "$TR_ID" ] > /dev/null 2>&1
 then
-        echo $(date +"%d-%m-%y %T") "transmission-remote $IP_KODI:$RPC_PORT_KODI -n $USER_KODI:$PASSWORD_KODI -t $TR_ID -r : " `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "$TR_ID" -r` >> "$FILELOG"
+        echo $(date +"%d-%m-%y %T") "transmission-remote $IP_KODI:$RPC_PORT_KODI -n USER_KODI:PASSWORD_KODI -t $TR_ID -r : " `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "$TR_ID" -r` >> "$FILELOG"
 else
-        echo $(date +"%d-%m-%y %T") "NO TR_ID ! transmission-remote $IP_KODI:$RPC_PORT_KODI -n $USER_KODI:$PASSWORD_KODI -l |grep -F ${TR_TORRENT_NAME%.*} |awk '{print "'$1'"}' : $TR_ID" >> "$FILELOG"
+        echo $(date +"%d-%m-%y %T") "NO TR_ID ! transmission-remote $IP_KODI:$RPC_PORT_KODI -n USER_KODI:PASSWORD_KODI -l |grep -F ${TR_TORRENT_NAME%.*} |awk '{print "'$1'"}' : $TR_ID" >> "$FILELOG"
 fi
 
 #On modifie les droits si un fichier est rajouté
 if ! [ -z `tail -n -38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |head -n -1 |grep -B 1 "Process" |tail -n 2|grep "MOVE"` ] > /dev/null 2>&1
 then
 	#On modifie les droits sur les fichiers téléchargés
-        DIR_PATH=`tail -n -38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |head -n -1 |grep -B 1 "Process" |tail -n 2|grep "MOVE"|awk -Fto '{print $2}'|cut -d '[' -f 2 |cut -d ']' -f 1`
+        DIR_PATH=`tail -n -38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |head -n -1 |grep -B 1 "Process" |tail -n 2|grep "MOVE" |sed -E 's/(.*)\] to \[(.*)(\])/\2/'`
         DIR_PATH=`dirname "$DIR_PATH"`
 	#On s'assure que le chemin ou on change les droits correspond bien au chemin ou on stocke les films et séries
         if [ -z `echo "$DIR_PATH" |grep "$DIR_MEDIA"` ] >/dev/null 2>&1
