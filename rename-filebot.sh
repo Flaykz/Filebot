@@ -74,13 +74,10 @@ then
 fi
 
 #On enleve le torrent de transmission
-TR_ID=`transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F "${TR_TORRENT_NAME%.*}" |awk '{print $1}'`
-if ! [ -z "$TR_ID" ] > /dev/null 2>&1
-then
-        echo $(date +"%d-%m-%y %T") "transmission-remote $IP_KODI:$RPC_PORT_KODI -n USER_KODI:PASSWORD_KODI -t $TR_ID -r : " `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "$TR_ID" -r` >> "$FILELOG"
-else
-        echo $(date +"%d-%m-%y %T") "NO TR_ID ! transmission-remote $IP_KODI:$RPC_PORT_KODI -n USER_KODI:PASSWORD_KODI -l |grep -F ${TR_TORRENT_NAME%.*} |awk '{print "'$1'"}' : $TR_ID" >> "$FILELOG"
-fi
+echo $(date +"%d-%m-%y %T") "transmission-remote $IP_KODI:$RPC_PORT_KODI -n $USER_KODI:PASSWORD_KODI -l |grep -F Finished  |awk '{print $1}'" >> "$FILELOG"
+for TR_ID in `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F Finished  |awk '{print $1}'`; do
+    `transmission-remote "$IP_KODI":"RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "${TR_ID%\*}" -r`
+done
 
 #On modifie les droits si un fichier est rajouté
 if ! [ -z `tail -n -38 "$FILELOG" |grep -A 38 "$SCRIPT_PATH" |head -n -1 |grep -B 1 "Process" |tail -n 2|grep "MOVE"` ] > /dev/null 2>&1
