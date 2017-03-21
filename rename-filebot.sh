@@ -74,9 +74,9 @@ then
 fi
 
 #On enleve le torrent de transmission
-echo $(date +"%d-%m-%y %T") "transmission-remote $IP_KODI:$RPC_PORT_KODI -n $USER_KODI:PASSWORD_KODI -l |grep -F Finished  |awk '{print $1}'" >> "$FILELOG"
-for TR_ID in `transmission-remote "$IP_KODI":"$RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -l |grep -F Finished  |awk '{print $1}'`; do
-    `transmission-remote "$IP_KODI":"RPC_PORT_KODI" -n "$USER_KODI":"$PASSWORD_KODI" -t "${TR_ID%\*}" -r`
+echo $(date +"%d-%m-%y %T") "transmission-remote $IP_TRANSMISSION:$RPC_PORT_TRANSMISSION -n $USER_TRANSMISSION:$PASSWORD_TRANSMISSION -l |grep -F Finished  |awk "\''{print $1}'\' >> "$FILELOG"
+for TR_ID in `transmission-remote "$IP_TRANSMISSION":"$RPC_PORT_TRANSMISSION" -n "$USER_TRANSMISSION":"$PASSWORD_TRANSMISSION" -l |grep -F Finished  |awk '{print $1}'`; do
+    `transmission-remote "$IP_TRANSMISSION":"$RPC_PORT_TRANSMISSION" -n "$USER_TRANSMISSION":"$PASSWORD_TRANSMISSION" -t "${TR_ID%\*}" -r`
 done
 
 #On modifie les droits si un fichier est rajouté
@@ -90,7 +90,7 @@ then
 	then
         	echo $(date +"%d-%m-%y %T") "Le script a voulu changer les droits du dossier $DIR_PATH : refusé pour prévenir d'une mauvaise manipulation" 1>&2
 	else
-        	sudo chown -R "$USER_KODI":"$USER_KODI" "$DIR_PATH"
+        	sudo chown -R "$USER":"$USER" "$DIR_PATH"
         	sudo chmod -R 777 "$DIR_PATH"
 		echo $(date +"%d-%m-%y %T") "Modification des droits pour le dossier $DIR_PATH" >> "$FILELOG"
 	fi
