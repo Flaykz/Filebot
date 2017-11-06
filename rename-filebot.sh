@@ -52,14 +52,8 @@ else
 	sudo filebot -script fn:amc --output "$DIR_MEDIA" --log-file "$LOG_FILE" --action "$ACTION" --conflict "$CONFLICT" -non-strict --encoding "$ENCODING" --db xattr --def kodi="$IP_KODI" music=y artwork="$ARTWORK" seriesFormat="$DIR_MEDIA$SERIE_FORMAT" movieFormat="$DIR_MEDIA$MOVIE_FORMAT" ut_dir="$TR_TORRENT_DIR" ut_file="$TR_TORRENT_NAME" ut_kind="$UT_KIND" ut_title="$TR_TORRENT_NAME" >> "$FILELOG" 2>&1
 fi
 
-#LINE_LOG1=`tail -n 150 "$FILELOG" |grep -n -F "********************************************************"|tail -n 2|head -n 1|cut -d: -f1`
-#LINE_LOG2=`tail -n 150 "$FILELOG" |grep -n -F "********************************************************"|tail -n 2|tail -n 1|cut -d: -f1`
-#NUMBER_LINE=`expr 150 - $LINE_LOG1`
-#NUMBER_LINE_KEEP=`expr $LINE_LOG2 - $LINE_LOG1`
-LINE_LOG=`tail -n 150 "$FILELOG" |grep -n -F "********************************************************"|tail -n 1|cut -d: -f1`
+LINE_LOG=`tail -n 150 "$FILELOG" |grep -n -F "********************************************************"|tail -n 2|head -n 1|cut -d: -f1`
 NUMBER_LINE=`expr 150 - $LINE_LOG`
-#tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |head -n $NUMBER_LINE_KEEP |grep "MOVE" 1>&2
-tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep "MOVE" 1>&2 >> $FILETOSEND
 
 if ! [ -z `tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep "already exists"` ] > /dev/null 2>&1
 then
@@ -79,6 +73,26 @@ then
 		echo $(date +"%d-%m-%y %T") Une action doit être effectuée pour le fichier suivant :  "$TR_TORRENT_DIR/$TR_TORRENT_NAME" >> "$FILELOG"
 		echo "Une action doit être effectuée pour le fichier suivant : $TR_TORRENT_DIR/$TR_TORRENT_NAME" 1>&2 >> $FILETOSEND
 	fi
+else
+	#On modifie les droits si un fichier est rajouté
+	if ! [ -z `tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From"` ] > /dev/null 2>&1
+	then
+		tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From" 1>&2 >> $FILETOSEND
+		#On modifie les droits sur les fichiers téléchargés
+		DIR_PATH=`tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From" |sed -E 's/(.*)\] to \[(.*)(\])/\2/'`
+		DIR_PATH=`dirname "$DIR_PATH"`
+		#On s'assure que le chemin ou on change les droits correspond bien au chemin ou on stocke les films et séries
+		if [ -z `echo "$DIR_PATH" |grep "$DIR_MEDIA"` ] >/dev/null 2>&1
+		then
+			echo $(date +"%d-%m-%y %T") "Le script a voulu changer les droits du dossier $DIR_PATH : refusé pour prévenir d'une mauvaise manipulation. $DIR_MEDIA" 1>&2 >> $FILETOSEND
+		else
+			sudo chown -R "$USER_RW_DISK":"$GROUP_RW_DISK" "$DIR_PATH" 1>&2 >> $FILETOSEND
+			sudo chmod -R 777 "$DIR_PATH" 1>&2 >> $FILETOSEND
+			echo $(date +"%d-%m-%y %T") "Modification des droits pour le dossier $DIR_PATH" >> "$FILELOG"
+		fi
+	else
+		echo $(date +"%d-%m-%y %T") "Aucun fichie déplacé : " `tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From"` 1>&2 >> $FILETOSEND
+	fi
 fi
 
 #On enleve le torrent de transmission
@@ -88,23 +102,6 @@ for TR_ID in `transmission-remote "$IP_TRANSMISSION":"$RPC_PORT_TRANSMISSION" -n
     `transmission-remote "$IP_TRANSMISSION":"$RPC_PORT_TRANSMISSION" -n "$USER_TRANSMISSION":"$PASSWORD_TRANSMISSION" -t "${TR_ID}" -r`
 done
 
-#On modifie les droits si un fichier est rajouté
-if ! [ -z `tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From"` ] > /dev/null 2>&1
-then
-	#On modifie les droits sur les fichiers téléchargés
-        DIR_PATH=`tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From" |sed -E 's/(.*)\] to \[(.*)(\])/\2/'`
-        DIR_PATH=`dirname "$DIR_PATH"`
-	#On s'assure que le chemin ou on change les droits correspond bien au chemin ou on stocke les films et séries
-        if [ -z `echo "$DIR_PATH" |grep "$DIR_MEDIA"` ] >/dev/null 2>&1
-	then
-        	echo $(date +"%d-%m-%y %T") "Le script a voulu changer les droits du dossier $DIR_PATH : refusé pour prévenir d'une mauvaise manipulation. $DIR_MEDIA" 1>&2 >> $FILETOSEND
-	else
-        	sudo chown -R "$USER_RW_DISK":"$GROUP_RW_DISK" "$DIR_PATH" 1>&2 >> $FILETOSEND
-        	sudo chmod -R 777 "$DIR_PATH" 1>&2 >> $FILETOSEND
-		echo $(date +"%d-%m-%y %T") "Modification des droits pour le dossier $DIR_PATH" >> "$FILELOG"
-	fi
-else
-	echo $(date +"%d-%m-%y %T") "Aucun fichie déplacé : " `tail -n 150 "$FILELOG" |tail -n $NUMBER_LINE |grep -F "[MOVE] From"` 1>&2 >> $FILETOSEND
-fi
+
 #echo $(date +"%d-%m-%y %T") "Statut : $?" >> "$FILELOG"
 echo "********************************************************" >> "$FILELOG"
