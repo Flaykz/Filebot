@@ -22,13 +22,13 @@ sudo find "$DIR_COMPLETE" -type f -regextype posix-egrep -iregex '.*\.(html|nfo|
 sudo find "$DIR_COMPLETE" -type f -regextype posix-egrep -iregex '.*\.(mkv|avi|mp4|mpg)' -print0 |xargs -0 -I '{}' mv '{}' "$DIR_SCAN/$DIR_VIDEO"
 sudo find "$DIR_COMPLETE" -type f -regextype posix-egrep -iregex '.*\.(pdf|epub|doc)' -print0 |xargs -0 -I '{}' mv '{}' "$DIR_SCAN/$DIR_EBOOK"
 sudo find "$DIR_COMPLETE" -type f -regextype posix-egrep -iregex '.*\.(iso|rar|zip|7zip)' -print0 |xargs -0 -I '{}' mv '{}' "$DIR_SCAN/$DIR_ISO"
-
+sudo find "$DIR_SCAN/$DIR_VIDEO" -mindepth 1 -maxdepth 1 -type d -print0 |xargs -0 /bin/rm -Rf
 sudo find "$DIR_SCAN/$DIR_VIDEO" -type f -print0 -exec /opt/share/filebot/rename-filebot.sh {} \;
 
 NBLINE=`wc -l $FILETOSEND |cut -f1 -d' '`
 echo $NBLINE
 cat $FILETOSEND
-if [ $NBLINE -ne 4 ] 
+if [ $NBLINE -ne 4 ]
 then
     echo "envoi du mail"
     cat $FILETOSEND |sendmail -t
